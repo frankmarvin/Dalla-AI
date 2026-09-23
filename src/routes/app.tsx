@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
-import { AppSidebar } from "@/components/dalla/AppSidebar";
+import { AppSidebar } from "@/components/dallaAI/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
