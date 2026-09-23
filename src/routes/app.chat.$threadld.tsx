@@ -4,12 +4,16 @@ import { useQuery } from "@tanstack/react-query";
 import { loadMessages } from "@/lib/chat-data";
 import { ChatView } from "@/components/dallaAI/ChatView";
 
-export const Route = createFileRoute("/app/chat/$threadId")({
-  component: ChatRoute,
-});
+export const Route =
+  createFileRoute(
+    "/app/chat/$threadId",
+  )({
+    component: ChatRoute,
+  });
 
 function ChatRoute() {
-  const { threadId } = Route.useParams();
+  const { threadId } =
+    Route.useParams();
 
   const {
     data,
@@ -17,8 +21,14 @@ function ChatRoute() {
     isError,
     error,
   } = useQuery({
-    queryKey: ["messages", threadId],
-    queryFn: () => loadMessages(threadId),
+    queryKey: [
+      "messages",
+      threadId,
+    ],
+
+    queryFn: () =>
+      loadMessages(threadId),
+
     staleTime: Infinity,
   });
 
@@ -52,7 +62,9 @@ function ChatRoute() {
     <ChatView
       key={threadId}
       threadId={threadId}
-      initialMessages={data ?? []}
+      initialMessages={
+        data ?? []
+      }
     />
   );
 }
