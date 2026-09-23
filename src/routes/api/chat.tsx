@@ -1,75 +1,144 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createOpenAI } from "@ai-sdk/openai";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import {
-  createLovableAiGatewayRunIdFetch,
-  getLovableAiGatewayResponseHeaders,
-  getLovableAiGatewayRunId,
-  withLovableAiGatewayRunIdHeader,
-} from "@/lib/ai-gateway.server";
+  convertToModelMessages,
+  streamText,
+  type UIMessage,
+} from "ai";
 
-type ChatRequestBody = { messages?: unknown; mode?: string };
+type ChatRequestBody = {
+  messages?: unknown;
+  mode?: string;
+};
 
 const MODE_PROMPTS: Record<string, string> = {
-  chat: "Answer helpfully, accurately and concisely. Use markdown.",
-  code: "You are a senior software engineer. Give correct, runnable code with fenced code blocks labelled with the language, then a short explanation.",
-  write: "You are an expert writer and editor. Produce polished, well-structured prose and offer a short note on tone and structure.",
-  research:
-    "You are a rigorous researcher. Structure answers as findings with clear reasoning, note uncertainty explicitly, and list sources or the evidence you relied on.",
+  chat: `
+Answer helpfully, accurately and clearly.
+Use markdown when useful.
+Do not invent facts.
+If you are uncertain, say so.
+`,
+
+  code: `
+You are a senior software engineer.
+Provide correct, secure and runnable code.
+Use fenced code blocks with the correct language.
+Explain important implementation details briefly.
+Do not invent APIs or libraries.
+`,
+
+  write: `
+You are an expert writer and editor.
+Produce polished, natural and well-structured writing.
+Match the user's requested tone and audience.
+`,
+
+  research: `
+You are a rigorous research assistant.
+Separate facts from assumptions.
+Clearly identify uncertainty.
+Do not fabricate sources, citations or statistics.
+Structure complex answers with useful headings.
+`,
 };
 
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const body = (await request.json()) as ChatRequestBody;
-        if (!Array.isArray(body.messages)) {
-          return new Response("Messages are required", { status: 400 });
-        }
+        try {
+          const body = (await request.json()) as ChatRequestBody;
 
-        const key = process.env["LOVABLE_API_KEY"];
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
+          if (!Array.isArray(body.messages)) {
+            return new Response(
+              JSON.stringify({
+                error: "Messages are required.",
+              }),
+              {
+                status: 400,
+                headers: {
+                  "content-type": "application/json",
+                },
+              },
+            );
+          }
 
-        const initialRunId = getLovableAiGatewayRunId(request);
-        const runIdFetch = createLovableAiGatewayRunIdFetch(initialRunId);
-        const lovable = createOpenAI({
-          baseURL: "https://ai.gateway.lovable.dev/v1",
-          apiKey: key,
-          headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
-          fetch: runIdFetch.fetch,
-        });
+          const apiKey = process.env.OPENAI_API_KEY;
 
-        const mode = typeof body.mode === "string" ? body.mode : "chat";
-        const system = `You are Dalla AI, a precise and friendly AI workspace assistant. Tagline: Think Faster. Create Smarter. ${
-          MODE_PROMPTS[mode] ?? MODE_PROMPTS["chat"]
-        }`;
+          if (!apiKey) {
+            console.error("OPENAI_API_KEY is not configured.");
 
-        const result = streamText({
-          model: lovable.responses("openai/gpt-6-astra"),
-          system,
-          messages: await convertToModelMessages(body.messages as UIMessage[]),
-          abortSignal: request.signal,
-          providerOptions: {
-            openai: {
-              forceReasoning: true,
-              reasoningEffort: "low",
-              reasoningSummary: "auto",
-              store: false,
-              include: ["reasoning.encrypted_content"],
-            },
-          },
-        });
+            return new Response(
+              JSON.stringify({
+                error:
+                  "Dalla AI is not configured yet. Add OPENAI_API_KEY to the server environment.",
+              }),
+              {
+                status: 500,
+                headers: {
+                  "content-type": "application/json",
+                },
+              },
+            );
+          }
 
-        return withLovableAiGatewayRunIdHeader(
-          result.toUIMessageStreamResponse({
+          const openai = createOpenAI({
+            apiKey,
+          });
+
+          const mode =
+            typeof body.mode === "string" &&
+            body.mode in MODE_PROMPTS
+              ? body.mode
+              : "chat";
+
+          const system = `
+You are Dalla AI.
+
+Tagline:
+Think Faster. Create Smarter.
+
+You are a precise, friendly and reliable AI workspace assistant.
+
+${MODE_PROMPTS[mode]}
+
+Important rules:
+- Never expose API keys or private server configuration.
+- Never claim to have accessed a file, website, database or tool unless you actually did.
+- Do not fabricate citations.
+- Prefer concise answers unless the user asks for detail.
+`;
+
+          const result = streamText({
+            model: openai("gpt-5.6"),
+            system,
+            messages: await convertToModelMessages(
+              body.messages as UIMessage[],
+            ),
+            abortSignal: request.signal,
+          });
+
+          return result.toUIMessageStreamResponse({
             originalMessages: body.messages as UIMessage[],
-            sendReasoning: true,
-            headers: getLovableAiGatewayResponseHeaders(undefined, {
-              ...(initialRunId ? { "X-Lovable-AIG-Run-ID": initialRunId } : {}),
+          });
+        } catch (error) {
+          console.error("Dalla AI chat error:", error);
+
+          return new Response(
+            JSON.stringify({
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Unable to process the AI request.",
             }),
-          }),
-          runIdFetch,
-        );
+            {
+              status: 500,
+              headers: {
+                "content-type": "application/json",
+              },
+            },
+          );
+        }
       },
     },
   },
