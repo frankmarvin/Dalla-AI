@@ -1,4 +1,4 @@
-# Welcome to your Dalla AI web project
+# Welcome to DALLA AI WEB project
 
 This project was built with [Lovable](https://lovable.dev).
 
@@ -21,9 +21,11 @@ npm i
 npm run dev
 ```
 
-## Built with
+## Technology Stack
 
 - TanStack Start
 - TypeScript
 - React
 - Tailwind CSS
+
+                          Build in Kenya 🇰🇪 By Frank Marvin
