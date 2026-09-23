@@ -28,4 +28,4 @@ npm run dev
 - React
 - Tailwind CSS
 
-                          Build in Kenya 🇰🇪 By Frank Marvin
+                                     Build in Kenya 🇰🇪 By Frank Marvin
