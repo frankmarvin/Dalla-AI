@@ -80,21 +80,48 @@ export function ChatView({
 
   const busy = status === "submitted" || status === "streaming";
 
-  async function submit(text: string) {
-    const value = text.trim();
-    if (!value || busy) return;
-    setInput("");
-    const userMessage: UIMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      parts: [{ type: "text", text: value }],
-    };
-    void saveMessage(threadId, userMessage);
-    void maybeTitleThread(threadId, value).then(() =>
-      queryClient.invalidateQueries({ queryKey: ["threads"] }),
-    );
-    await sendMessage({ text: value });
+async function submit(text: string) {
+  const value = text.trim();
+
+  if (!value || busy) {
+    return;
   }
+
+  setInput("");
+
+  const userMessage: UIMessage = {
+    id: crypto.randomUUID(),
+    role: "user",
+    parts: [
+      {
+        type: "text",
+        text: value,
+      },
+    ],
+  };
+
+  try {
+    await saveMessage(threadId, userMessage);
+
+    await maybeTitleThread(threadId, value);
+
+    queryClient.invalidateQueries({
+      queryKey: ["threads"],
+    });
+
+    await sendMessage({
+      text: value,
+    });
+  } catch (error) {
+    console.error("Failed to send message:", error);
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Dalla couldn't send your message.",
+    );
+  }
+} 
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
