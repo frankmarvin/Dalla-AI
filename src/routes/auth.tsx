@@ -1,4 +1,3 @@
-```tsx
 import { useEffect, useState } from "react";
 import {
   createFileRoute,
@@ -6,10 +5,17 @@ import {
   useNavigate,
   useSearch,
 } from "@tanstack/react-router";
-import { Eye, EyeOff, Loader2, Mail, Lock, User } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,10 +35,14 @@ export const Route = createFileRoute("/auth")({
       mode === "signup" ||
       mode === "reset"
     ) {
-      return { mode };
+      return {
+        mode,
+      };
     }
 
-    return { mode: "signin" };
+    return {
+      mode: "signin",
+    };
   },
 
   head: () => ({
@@ -57,6 +67,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+
   const search = useSearch({
     from: "/auth",
   });
@@ -141,7 +152,9 @@ function AuthPage() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
-  async function handleSignIn(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSignIn(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -159,10 +172,11 @@ function AuthPage() {
     setBusy(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-      });
+      const { error } =
+        await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
 
       if (error) {
         throw error;
@@ -186,7 +200,9 @@ function AuthPage() {
     }
   }
 
-  async function handleSignUp(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSignUp(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -208,7 +224,9 @@ function AuthPage() {
     }
 
     if (password.length < 8) {
-      toast.error("Your password must contain at least 8 characters.");
+      toast.error(
+        "Your password must contain at least 8 characters.",
+      );
       return;
     }
 
@@ -222,24 +240,27 @@ function AuthPage() {
     try {
       const redirectUrl = `${window.location.origin}/app`;
 
-      const { data, error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: normalizedName,
-            name: normalizedName,
+      const { data, error } =
+        await supabase.auth.signUp({
+          email: normalizedEmail,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              full_name: normalizedName,
+              name: normalizedName,
+            },
           },
-        },
-      });
+        });
 
       if (error) {
         throw error;
       }
 
       if (data.session) {
-        toast.success("Your Dalla AI account has been created.");
+        toast.success(
+          "Your Dalla AI account has been created.",
+        );
 
         await navigate({
           to: "/app",
@@ -294,14 +315,16 @@ function AuthPage() {
     setBusy(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/auth?mode=signin`;
+      const redirectUrl =
+        `${window.location.origin}/auth?mode=signin`;
 
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        normalizedEmail,
-        {
-          redirectTo: redirectUrl,
-        },
-      );
+      const { error } =
+        await supabase.auth.resetPasswordForEmail(
+          normalizedEmail,
+          {
+            redirectTo: redirectUrl,
+          },
+        );
 
       if (error) {
         throw error;
@@ -313,7 +336,10 @@ function AuthPage() {
 
       setPassword("");
     } catch (error) {
-      console.error("Password reset failed:", error);
+      console.error(
+        "Password reset failed:",
+        error,
+      );
 
       toast.error(
         error instanceof Error
@@ -329,14 +355,16 @@ function AuthPage() {
     setBusy(true);
 
     try {
-      const redirectTo = `${window.location.origin}/app`;
+      const redirectTo =
+        `${window.location.origin}/app`;
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-        },
-      });
+      const { data, error } =
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+          },
+        });
 
       if (error) {
         throw error;
@@ -346,7 +374,10 @@ function AuthPage() {
         window.location.assign(data.url);
       }
     } catch (error) {
-      console.error("Google sign in failed:", error);
+      console.error(
+        "Google sign in failed:",
+        error,
+      );
 
       toast.error(
         error instanceof Error
@@ -387,8 +418,8 @@ function AuthPage() {
                 </h1>
 
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Enter your email and we'll send you a secure password reset
-                  link.
+                  Enter your email and we'll send you a
+                  secure password reset link.
                 </p>
               </div>
 
@@ -396,27 +427,11 @@ function AuthPage() {
                 onSubmit={handlePasswordReset}
                 className="space-y-5"
               >
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">Email address</Label>
-
-                  <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(event) =>
-                        setEmail(event.target.value)
-                      }
-                      className="pl-10"
-                      disabled={busy}
-                      required
-                    />
-                  </div>
-                </div>
+                <EmailField
+                  email={email}
+                  setEmail={setEmail}
+                  disabled={busy}
+                />
 
                 <Button
                   type="submit"
@@ -478,7 +493,9 @@ function AuthPage() {
             <div className="mb-6 grid grid-cols-2 rounded-lg border border-border bg-muted/40 p-1">
               <button
                 type="button"
-                onClick={() => changeMode("signin")}
+                onClick={() =>
+                  changeMode("signin")
+                }
                 className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   !isSignup
                     ? "bg-background text-foreground shadow-sm"
@@ -490,7 +507,9 @@ function AuthPage() {
 
               <button
                 type="button"
-                onClick={() => changeMode("signup")}
+                onClick={() =>
+                  changeMode("signup")
+                }
                 className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   isSignup
                     ? "bg-background text-foreground shadow-sm"
@@ -514,19 +533,23 @@ function AuthPage() {
 
             <div className="my-6 flex items-center gap-3">
               <div className="h-px flex-1 bg-border" />
+
               <span className="text-xs text-muted-foreground">
                 OR
               </span>
+
               <div className="h-px flex-1 bg-border" />
             </div>
 
             {isSignup ? (
               <form
                 onSubmit={handleSignUp}
-                className="space-y-4"
+                className="space-y-5"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="full-name">Full name</Label>
+                  <Label htmlFor="full-name">
+                    Full name
+                  </Label>
 
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -560,7 +583,9 @@ function AuthPage() {
                   onChange={setPassword}
                   visible={showPassword}
                   onToggle={() =>
-                    setShowPassword((value) => !value)
+                    setShowPassword(
+                      (value) => !value,
+                    )
                   }
                   disabled={busy}
                   autoComplete="new-password"
@@ -573,15 +598,13 @@ function AuthPage() {
                   onChange={setConfirmPassword}
                   visible={showConfirmPassword}
                   onToggle={() =>
-                    setShowConfirmPassword((value) => !value)
+                    setShowConfirmPassword(
+                      (value) => !value,
+                    )
                   }
                   disabled={busy}
                   autoComplete="new-password"
                 />
-
-                <p className="text-xs leading-5 text-muted-foreground">
-                  Your password must contain at least 8 characters.
-                </p>
 
                 <Button
                   type="submit"
@@ -617,9 +640,10 @@ function AuthPage() {
 
                     <button
                       type="button"
-                      onClick={() => changeMode("reset")}
-                      className="text-xs font-medium text-primary hover:underline"
-                      disabled={busy}
+                      onClick={() =>
+                        changeMode("reset")
+                      }
+                      className="text-xs text-muted-foreground hover:text-foreground"
                     >
                       Forgot password?
                     </button>
@@ -632,7 +656,9 @@ function AuthPage() {
                     onChange={setPassword}
                     visible={showPassword}
                     onToggle={() =>
-                      setShowPassword((value) => !value)
+                      setShowPassword(
+                        (value) => !value,
+                      )
                     }
                     disabled={busy}
                     autoComplete="current-password"
@@ -691,7 +717,9 @@ function EmailField({
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor="email">Email address</Label>
+      <Label htmlFor="email">
+        Email address
+      </Label>
 
       <div className="relative">
         <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -702,7 +730,9 @@ function EmailField({
           autoComplete="email"
           placeholder="you@example.com"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(event) =>
+            setEmail(event.target.value)
+          }
           className="pl-10"
           disabled={disabled}
           required
@@ -733,18 +763,28 @@ function PasswordField({
 }) {
   return (
     <div className="space-y-2">
-      {label && <Label htmlFor={id}>{label}</Label>}
+      {label && (
+        <Label htmlFor={id}>
+          {label}
+        </Label>
+      )}
 
       <div className="relative">
         <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 
         <Input
           id={id}
-          type={visible ? "text" : "password"}
+          type={
+            visible
+              ? "text"
+              : "password"
+          }
           autoComplete={autoComplete}
           placeholder="••••••••"
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) =>
+            onChange(event.target.value)
+          }
           className="pl-10 pr-10"
           disabled={disabled}
           required
@@ -754,7 +794,11 @@ function PasswordField({
           type="button"
           onClick={onToggle}
           disabled={disabled}
-          aria-label={visible ? "Hide password" : "Show password"}
+          aria-label={
+            visible
+              ? "Hide password"
+              : "Show password"
+          }
           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
         >
           {visible ? (
@@ -776,7 +820,9 @@ function DallaLogo() {
       aria-label="Dalla AI home"
     >
       <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-        <span className="font-display text-sm font-bold">D</span>
+        <span className="font-display text-sm font-bold">
+          D
+        </span>
       </div>
 
       <span className="font-display text-lg font-bold tracking-tight">
@@ -805,14 +851,20 @@ function AuthBrandPanel() {
         </h2>
 
         <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">
-          Chat, research, analyze documents, work with images and build ideas
-          in one intelligent Dalla AI workspace.
+          Chat, research, analyze documents, work
+          with images and build ideas in one
+          intelligent Dalla AI workspace.
         </p>
       </div>
 
       <div className="relative z-10 flex items-center justify-between text-xs text-muted-foreground">
-        <span>© {new Date().getFullYear()} Dalla AI</span>
-        <span>Secure authentication</span>
+        <span>
+          © {new Date().getFullYear()} Dalla AI
+        </span>
+
+        <span>
+          Secure authentication
+        </span>
       </div>
 
       <div className="pointer-events-none absolute -right-32 -top-32 size-96 rounded-full bg-primary/10 blur-3xl" />
@@ -852,4 +904,3 @@ function GoogleIcon() {
     </svg>
   );
 }
-```
